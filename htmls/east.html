@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>upload</title>
+    <script src="/static/js/jquery.min.js"></script>
+</head>
+
+<style>
+    *{
+        margin: 0;
+        padding: 0;
+    }
+    .top_left{
+        width: 600px;
+        height: 30px;
+        position: absolute;
+    }
+    .left{
+        width: 600px;
+        height: 500px;
+        position: absolute;
+        top: 35px;
+    }
+    .top_right{
+        width: 400px;
+        height: 500px;
+        position: absolute;
+        left: 620px;
+    }
+    .right{
+        width: 400px;
+        height: 500px;
+        position: absolute;
+        left: 620px;
+        top: 35px;
+    }
+</style>
+
+<body>
+    <div id="upload" class="top_left">
+        <form enctype="multipart/form-data">
+            <input type="file" value="选择文件" id="file" name="myfile" />
+        </form>
+    </div>
+    <div class="left"><img id="img" src="static/uploadFiles/{{image_name}}" width="450"></div>
+    <div class="top_right"><button id="button" type="button">east检测</button></div>
+    <div class="right"><img id="east" src="static/tmpfiles/{{east_image_name}}" width="450"></div>
+
+    <script type="text/javascript">
+        $("#file").change(function(){
+            var dict=new FormData();
+            dict.append('myfile', document.getElementById('file').files[0]);
+            $.ajax({
+                url: "/upload",
+                type: "POST",
+                data: dict,
+                async: false,
+                processData: false,
+                contentType: false,
+                dataType: "JSON",
+                success:function(data, status){
+                    $("#img").attr("src", data.savepath);
+                },
+             });
+        });
+    </script>
+
+    <script type="text/javascript">
+        $('#button').click(function() {
+            var dict=new FormData();
+            var savepath = document.getElementById('img').getAttribute("src");
+            dict.append('savepath', savepath);
+            $.ajax({
+                url: "/east_image",
+                method: "POST",
+                data: dict,
+                async: false,
+                processData: false,
+                contentType: false,
+                dataType: "JSON",
+                success:function(data, status){
+                    $("#east").attr("src", data.output_path);
+                },
+            });
+        });
+    </script>
+</body>
+</html>

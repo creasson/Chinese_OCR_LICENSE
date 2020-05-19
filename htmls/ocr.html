@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>upload</title>
+    <script src="/static/js/jquery.min.js"></script>
+</head>
+
+<style>
+    *{
+        margin: 0;
+        padding: 0;
+    }
+    #imgbox{width:800px;height:120px;margin:30px auto;position:relative;overflow:hidden;}
+    #imgbox ul{position:absolute;list-style:none;}
+    #imgbox ul li {float:left; width:100px; height:100px; margin-right:30px;}
+    #button, #upload form input{
+        border: #7EBF4F 1px solid;
+        background-color:#95E574;
+    }
+    .top_left{
+        width: 600px;
+        height: 20px;
+        position: absolute;
+        left: 20px;
+        top: 20px;
+        text-align: center;
+    }
+    .left{
+        width: 600px;
+        height: 500px;
+        left: 20px;
+        top: 65px;
+        display: block;
+        position: absolute;
+        border:0.5px solid #ABABAB
+    }
+    .loading {
+		background: url(/static/js/load.png) no-repeat;
+		background-size: 50% 100%;
+		position: absolute;
+		width: 600px;
+		height: 500px;
+		animation: transformit 3s infinite;
+		display: none;
+	}
+	@keyframes transformit {
+		0%{
+			transform: translateX(-50%);
+		}
+		100%{
+			transform: translateX(50%);
+		}
+	}
+	.left img{
+        max-width: 100%;
+        max-height: 100%;
+        width:auto;
+        height:auto;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    .top_right{
+        width: 400px;
+        height: 20px;
+        position: absolute;
+        left: 670px;
+        top: 20px;
+        text-align: center;
+    }
+    .right{
+        width: 400px;
+        height: 500px;
+        position: absolute;
+        left: 670px;
+        top: 65px;
+    }
+</style>
+
+<body>
+
+    <!--<div id = "imgbox">-->
+        <!--<ul>-->
+            <!--<li><img src="static/standard_images/个人独资企业营业执照.png" width="100px" height="100px"/></li>-->
+            <!--<li><img src="static/standard_images/个体工商户营业执照.png" width="100px" height="100px" /></li>-->
+            <!--<li><img src="static/standard_images/个体工商户营业执照2.jpg" width="100px" height="100px"/></li>-->
+            <!--<li><img src="static/standard_images/企业法人营业执照2.png" width="100px" height="100px"/></li>-->
+            <!--<li><img src="static/standard_images/企业法人营业执照3.png" width="100px" height="100px"/></li>-->
+            <!--<li><img src="static/standard_images/营业执照.jpg" width="100px" height="100px"/></li>-->
+        <!--</ul>-->
+    <!--</div>-->
+
+    <div id="upload" class="top_left">
+        <form enctype="multipart/form-data">
+            <input type="file" value="选择文件" id="file" name="myfile" />
+        </form>
+    </div>
+    <div class="left">
+        <img id="img" src="{{imgpath}}">
+        <div id="loading" class="loading"></div>
+    </div>
+    <div class="top_right"><button id="button" type="button">OCR识别</button></div>
+    <div class="right"><textarea id='text' cols="60" rows="33">{{ocr_texts}}</textarea></div>
+
+    <!--为图片绑定单击事件-->
+    <script type="text/javascript">
+        $(function(){
+            $("#imgbox ul li img").click(function(){
+                <!--var url=this.getAttribute("src");-->
+                document.getElementById("img").src = this.getAttribute("src");
+            });
+        });
+    </script>
+
+    <script type="text/javascript">
+        $("#file").change(function(){
+            var dict=new FormData();
+            dict.append('myfile', document.getElementById('file').files[0]);
+            $.ajax({
+                url: "/upload",
+                type: "POST",
+                data: dict,
+                async: false,
+                processData: false,
+                contentType: false,
+                dataType: "JSON",
+                success:function(data, status){
+                    $("#img").attr("src", data.savepath);
+                },
+             });
+        });
+    </script>
+
+    <script type="text/javascript">
+        $('#button').click(function() {
+            $("#loading").css("display", "block");
+            $("#button").text("正在检测文本...");
+            $("#text").val("");
+            var dict=new FormData();
+            var savepath = document.getElementById('img').getAttribute("src");
+            dict.append('savepath', savepath);
+            $.when($.ajax({
+                url: "/east_image",
+                method: "POST",
+                data: dict,
+                async: true,
+                processData: false,
+                contentType: false,
+                dataType: "JSON",
+                success:function(data, status){
+                    $("#img").attr("src", data.output_path);
+                },
+            })).done(function(data){
+                $("#button").text("正在识别文字...");
+                dict.append('key', data.key);
+                dict.append('rect_dict', data.rect_dict);
+                $.ajax({
+                    url: "/ocr_image",
+                    method: "POST",
+                    data: dict,
+                    async: true,
+                    processData: false,
+                    contentType: false,
+                    dataType: "JSON",
+                    success:function(data, status){
+                        $("#button").text("OCR识别");
+                        $("#text").val(data.ocr_texts);
+                        $("#loading").css("display", "none");
+                    },
+                });
+            });
+        });
+    </script>
+</body>
+</html>
